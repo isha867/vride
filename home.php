@@ -16,6 +16,7 @@ $pageTitle = 'VRide - Smart Rentals';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   /* ══ TRUST BAR ══ */
@@ -88,12 +89,24 @@ a { color: inherit; text-decoration: none; }
 .logo {
   display: inline-flex;
   align-items: center;
+  gap: .35rem;
 }
 
 .logo img {
-  height: 58px;
+  height: 38px;
   width: auto;
   mix-blend-mode: screen;
+}
+.logo-text {
+  font-size: 1.48rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--wh);
+  font-family: 'Cinzel Decorative','Segoe UI',sans-serif;
+  line-height: 1;
+  margin-left: -0.35rem;
+  transform: translateY(7px);
 }
 
 .nav-links {
@@ -464,7 +477,8 @@ a { color: inherit; text-decoration: none; }
 <header class="nav">
   <div class="wrap nav-inner">
     <a href="home.php" class="logo">
-      <img src="img/logo.png" alt="VRide">
+      <img src="img/lo.png" alt="VRide">
+        <span class="logo-text">Ride</span>
     </a>
     <ul class="nav-links">
       <li><a href="home.php">HOME</a></li>
@@ -490,7 +504,6 @@ a { color: inherit; text-decoration: none; }
     <p class="hsub">FIND THE <span style="color:var(--wh)">BEST VEHICLE</span><br>FOR RENT <span class="dm">TODAY</span></p>
     <div class="hbtns">
       <a href="login.php" class="hbn" onclick="showToast(event)">BOOK NOW <i class="fa-solid fa-arrow-right"></i></a>
-      <a href="list_vehicle.php" class="hbo"><i class="fa-solid fa-plus"></i> LIST YOUR VEHICLE</a>
     </div>
     <div class="hero-nav"style="size: 1.5rem;" aria-label="Slideshow controls">
       <button class="arr" id="heroPrev" type="button" aria-label="Previous slide"><i class="fa-solid fa-chevron-left"></i></button>
@@ -585,19 +598,19 @@ a { color: inherit; text-decoration: none; }
     </div>
     <div class="how-grid">
       <div class="step">
-        <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <h3>Find Vehicle</h3>
-        <p>Browse through our vast collection of luxury cars and bikes.</p>
-      </div>
-      <div class="step">
-        <div class="step-icon"><i class="fa-solid fa-calendar-check"></i></div>
+        <div class="step-icon"><i class="fa-solid fa-car"></i></div>
         <h3>Book Online</h3>
-        <p>Select your dates and book with your preferred payment method.</p>
+        <p>Reserve your preferred vehicle online. Choose the exact hourly/daily timeframe.</p>
       </div>
       <div class="step">
-        <div class="step-icon"><i class="fa-solid fa-key"></i></div>
-        <h3>Drive Away</h3>
-        <p>Get delivery at your doorstep and enjoy your premium ride.</p>
+        <div class="step-icon"><i class="fa-solid fa-location-dot"></i></div>
+        <h3>Visit the Shop</h3>
+        <p>Arrive at the shop, inspect the vehicle, and submit your original ID.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <h3>Pay & Ride</h3>
+        <p>Sign the manual agreement, make advance payment at the desk, and enjoy!</p>
       </div>
       <div class="step">
         <div class="step-icon"><i class="fa-solid fa-rotate-left"></i></div>
@@ -622,10 +635,7 @@ a { color: inherit; text-decoration: none; }
         <div class="faq-q">Is insurance included? <i class="fa-solid fa-plus"></i></div>
         <div class="faq-a">Yes, all our rentals come with comprehensive insurance coverage.</div>
       </div>
-      <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-q">Can I list my own vehicle? <i class="fa-solid fa-plus"></i></div>
-        <div class="faq-a">Yes! Use the 'List Your Vehicle' button to start earning from your asset.</div>
-      </div>
+      
     </div>
   </div>
 </section>
@@ -634,7 +644,7 @@ a { color: inherit; text-decoration: none; }
   <div class="wrap">
     <div class="f-top">
       <div class="f-col">
-        <a href="home.php" class="logo"><img src="img/logo.png" alt="VRide" style="height:62px; mix-blend-mode:screen;"></a>
+        <a href="home.php" class="logo"><img src="img/lo.png" alt="VRide" style="height:38px; mix-blend-mode:screen;"><span class="logo-text">Ride</span></a>
         <p style="margin-top:1.5rem; color:var(--tx2); line-height:1.7; font-weight:600;">Redefining luxury rentals in India. Experience the ride of your life with our premium fleet and seamless service.</p>
       </div>
       <div class="f-col">
@@ -736,6 +746,9 @@ function toggleFaq(el) {
   }
 }
 </script>
+<?php include __DIR__ . '/firebase_script.php'; ?>
 
 </body>
 </html>
+
+

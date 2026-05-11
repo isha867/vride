@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { $sent = true; }
         Send a Message
       </div>
 
-      <form method="POST">
+      <form method="POST" id="contactForm">
         <div class="form-row">
           <div class="form-group">
             <label>Full Name *</label>
@@ -179,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { $sent = true; }
             <select name="type">
               <option>General</option>
               <option>Booking Help</option>
-              <option>List My Vehicle</option>
               <option>Technical Issue</option>
               <option>Partnership</option>
             </select>
@@ -202,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { $sent = true; }
         <div class="info-title">
           <i class="fa-solid fa-address-card"></i>
           Contact Details
+  <script src="js/contact-email.js?v=1" defer></script>
         </div>
 
         <div class="info-item">
@@ -256,3 +256,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { $sent = true; }
 </div>
 </body>
 </html>
+

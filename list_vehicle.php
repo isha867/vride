@@ -1,7 +1,7 @@
 <?php
 require_once 'db.php';
 $pageTitle = 'List Your Vehicle — VRide';
-if (!isLoggedIn()) { flash('Please login to list a vehicle.','error'); redirect('login.php'); }
+if (!isAdmin()) { flash('Only administrators can add vehicles.','error'); redirect('login.php'); }
 
 $success = false;
 $aiResult = null;
@@ -36,11 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Run AI admin decision
-    $aiResult = aiAdminDecision($data);
-    // Force status to 'pending' for manual approval as requested
-    $data['status'] = 'pending';
-    $data['final_price'] = $aiResult['suggested_price'];
+    
+    // Force status to "pending" for manual approval
+    $data["status"] = "pending";
+    // We default final_price to the user-provided price_per_day initially, admin adjusts later
+    $data["final_price"] = $data["price_per_day"];
+
 
     $pdo = getDB();
     if ($pdo) {
@@ -66,14 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="sec-label">Earn with VRide</div>
     <div class="sec-h" style="margin-bottom:2.5rem;">LIST YOUR <span class="dim">VEHICLE</span></div>
 
-    <?php if ($success && $aiResult): ?>
-    <div class="ai-result-box <?= $aiResult['decision']==='approved'?'ai-approved':'ai-pending' ?>">
-      <div class="ai-title"><i class="fas fa-robot"></i> AI Admin Review — <?= strtoupper($aiResult['decision']) ?></div>
-      <p style="font-size:.88rem;margin-bottom:.5rem;"><?= htmlspecialchars($aiResult['note']) ?></p>
-      <div class="ai-score-bar"><div class="ai-score-fill" style="width:<?= $aiResult['score'] ?>%"></div></div>
-      <small style="font-size:.72rem;opacity:.7;">Listing score: <?= $aiResult['score'] ?>/100 &nbsp;|&nbsp; Suggested price: ₹<?= $aiResult['suggested_price'] ?>/day</small>
+    <?php if ($success): ?>
+    <div class="ai-result-box ai-pending">
+      <div class="ai-title"><i class="fas fa-check"></i> Vehicle Submitted</div>
+      <p style="font-size:.88rem;margin-bottom:.5rem;">Your vehicle has been successfully submitted and is currently pending admin approval.</p>
       <div style="margin-top:1rem;">
-        <a href="dashboard.php" class="btn btn-primary btn-sm">View My Listings →</a>
+        <a href="dashboard.php" class="btn btn-primary btn-sm">View My Listings ?</a>
       </div>
     </div>
     <?php else: ?>
@@ -129,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
           <div class="form-group">
             <label>Your City *</label>
-            <input type="text" name="city" placeholder="e.g. Mumbai, Delhi, Pune" required>
+            <input type="text" name="city" placeholder="e.g. LPU Main Gate, Law Gate, At Shop" required>
           </div>
         </div>
 
@@ -155,19 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
           <label>Upload Image from Local PC</label>
           <input type="file" name="image_file" accept="image/*" style="margin-bottom: 0.5rem; color: var(--txt);">
-          <div style="font-size: 0.75rem; color: var(--txt2); margin: 0.5rem 0;">— OR —</div>
-          <label>Image URL (optional)</label>
-          <input type="url" name="image" placeholder="https://... (paste a direct image link)">
-          <small style="font-size:.72rem;color:var(--txt2);margin-top:.3rem;">You can use any public image URL from Google or Unsplash</small>
+          
         </div>
 
-        <div style="margin-top:1.5rem;padding:1rem;background:rgba(26,140,255,.06);border:1px solid rgba(26,140,255,.15);">
-          <div style="font-family:inherit;font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--blue);margin-bottom:.4rem;"><i class="fas fa-robot"></i> AI Admin Review</div>
-          <p style="font-size:.8rem;color:var(--txt2);">After submission, our AI Admin instantly reviews your listing — checks completeness, suggests a fair final price, and either approves or flags it for manual review. You'll see the result immediately.</p>
+        
+          
         </div>
 
         <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:1.5rem;">
-          Submit for AI Review
+          Submit Vehicle
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </form>
@@ -191,3 +186,9 @@ document.querySelectorAll('input[type="date"]').forEach(i=>i.min=today);
 </script>
 </body>
 </html>
+
+
+
+
+
+

@@ -6,15 +6,29 @@ $pdo = getDB();
 $vehicles = [];
 $typeFilter = $_GET['type'] ?? 'all';
 $cityFilter = $_GET['city'] ?? '';
+$budgetFilter = (int)($_GET['budget'] ?? 0);
+$dateFilter = $_GET['date'] ?? '';
 
 if ($pdo) {
     $where = "WHERE status='approved'";
     $params = [];
     if ($typeFilter !== 'all') { $where .= " AND type=?"; $params[] = $typeFilter; }
     if ($cityFilter) { $where .= " AND city LIKE ?"; $params[] = "%$cityFilter%"; }
+    if ($budgetFilter > 0) {
+        if ($budgetFilter == 500) { $where .= " AND COALESCE(final_price, price_per_day) <= 500"; }
+        elseif ($budgetFilter == 2000) { $where .= " AND COALESCE(final_price, price_per_day) > 500 AND COALESCE(final_price, price_per_day) <= 2000"; }
+        elseif ($budgetFilter == 5000) { $where .= " AND COALESCE(final_price, price_per_day) > 2000 AND COALESCE(final_price, price_per_day) <= 5000"; }
+        elseif ($budgetFilter == 5001) { $where .= " AND COALESCE(final_price, price_per_day) > 5000"; }
+    }
     $stmt = $pdo->prepare("SELECT v.*, u.name as owner_name, u.city as owner_city FROM vehicles v LEFT JOIN users u ON v.owner_id=u.id $where ORDER BY v.created_at DESC");
     $stmt->execute($params);
     $vehicles = $stmt->fetchAll();
+}
+
+$bookedNowIds = [];
+if ($pdo) {
+  $bookedNowIds = $pdo->query("SELECT DISTINCT vehicle_id FROM bookings WHERE status='approved' AND CURDATE() BETWEEN pickup_date AND return_date")->fetchAll(PDO::FETCH_COLUMN);
+  $bookedNowIds = array_map('intval', $bookedNowIds);
 }
 
 /* Reliable online fallback images — Optimized for speed */
@@ -22,16 +36,30 @@ $fallback2w = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q
 $fallback4w = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&q=70";
 
 $demos = [
-  ["id"=>1,"title"=>"Royal Enfield Classic 350","type"=>"2wheeler","category"=>"Cruiser","city"=>"Mumbai","final_price"=>350,"price_per_day"=>350,"model"=>"Classic 350",
-   "imgs"=>["img/re_classic/side.png", "img/re_classic/front.png", "img/re_classic/rear.png"],
+  ["id"=>1,"title"=>"Royal Enfield Classic 350","type"=>"2wheeler","category"=>"Cruiser","city"=>"At Shop","final_price"=>350,"price_per_day"=>350,"model"=>"Classic 350",
+   "imgs"=>["https://images.unsplash.com/photo-1694956792421-e946fff94564?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1721543480826-b7e5ff28a3cb?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1723120589136-7522d0b05eb3?w=600&auto=format&fit=crop&q=60"],
    "description"=>"Iconic cruiser, perfect for long highway rides. Smooth engine, comfortable seat.","damage_charge"=>500,"extra_hour_charge"=>50,"terms"=>"Fuel not included. Return clean.","owner_name"=>"Ravi Kumar","badge"=>"Popular"],
-  ["id"=>2,"title"=>"Yamaha MT-15","type"=>"2wheeler","category"=>"Sport","city"=>"Bangalore","final_price"=>450,"price_per_day"=>450,"model"=>"MT-15","image"=>"https://images.unsplash.com/photo-1547549082-6bc09f2049ae?w=400&q=70","description"=>"Aggressive naked sport. Best for city thrill riders who want agility.","damage_charge"=>800,"extra_hour_charge"=>80,"terms"=>"Full gear required. No highway night riding.","owner_name"=>"Kiran R","badge"=>"New"],
-  ["id"=>3,"title"=>"Honda Activa 6G","type"=>"2wheeler","category"=>"Scooter","city"=>"Pune","final_price"=>200,"price_per_day"=>200,"model"=>"Activa","image"=>"https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=400&q=70","description"=>"Reliable everyday scooter, easy to ride and very fuel efficient.","damage_charge"=>300,"extra_hour_charge"=>30,"terms"=>"Helmet provided. Return with same fuel level.","owner_name"=>"Ankit Patel","badge"=>"Budget"],
-  ["id"=>4,"title"=>"KTM Duke 390","type"=>"2wheeler","category"=>"Sport","city"=>"Delhi","final_price"=>600,"price_per_day"=>600,"model"=>"Duke 390","image"=>"https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=400&q=70","description"=>"High-performance naked bike. Aggressive handling and strong brakes.","damage_charge"=>1200,"extra_hour_charge"=>100,"terms"=>"Valid license required. No pillion on highways.","owner_name"=>"Arjun Singh","badge"=>"Premium"],
-  ["id"=>5,"title"=>"Toyota Innova Crysta","type"=>"4wheeler","category"=>"SUV","city"=>"Delhi","final_price"=>2500,"price_per_day"=>2500,"model"=>"Innova","image"=>$fallback4w,"description"=>"Spacious 7-seater, ideal for family trips and corporate travel.","damage_charge"=>2000,"extra_hour_charge"=>200,"terms"=>"Driver not included. AC works fine.","owner_name"=>"Priya Sharma","badge"=>"Popular"],
-  ["id"=>6,"title"=>"Mahindra Thar","type"=>"4wheeler","category"=>"Off-Road","city"=>"Goa","final_price"=>3000,"price_per_day"=>3000,"model"=>"Thar 4x4","image"=>"https://images.unsplash.com/photo-1723306975792-f5a053a59dd3?q=80&w=400&auto=format&fit=crop","description"=>"Open-top 4x4 built for adventure. Beaches, trails, hills — it handles all.","damage_charge"=>3000,"extra_hour_charge"=>250,"terms"=>"4WD lock for off-road only. Return mud-free.","owner_name"=>"Deepak Goa","badge"=>"Adventure"],
-  ["id"=>7,"title"=>"Mercedes E-Class","type"=>"4wheeler","category"=>"Luxury","city"=>"Mumbai","final_price"=>4500,"price_per_day"=>4500,"model"=>"E-Class 2023","image"=>"https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&q=70","description"=>"Executive luxury sedan. Perfect for events, weddings, and business travel.","damage_charge"=>5000,"extra_hour_charge"=>400,"terms"=>"No smoking. Must return spotless.","owner_name"=>"Sanjay Mehta","badge"=>"Luxury"],
-  ["id"=>8,"title"=>"Swift Dzire","type"=>"4wheeler","category"=>"Sedan","city"=>"Chennai","final_price"=>1200,"price_per_day"=>1200,"model"=>"Dzire 2022","image"=>"https://images.unsplash.com/photo-1541443131876-44b03de101c3?w=400&q=70","description"=>"Comfortable compact sedan. Great mileage, smooth drive for city and highway.","damage_charge"=>1000,"extra_hour_charge"=>100,"terms"=>"Fuel not included. Return with full tank.","owner_name"=>"Meena R","badge"=>"Value"],
+  ["id"=>2,"title"=>"Yamaha MT-15","type"=>"2wheeler","category"=>"Sport","city"=>"Green Valley","final_price"=>450,"price_per_day"=>450,"model"=>"MT-15",
+   "imgs"=>["https://images.unsplash.com/photo-1722720251730-3f5df2030e2c?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1761583780505-a4edc9ecec78?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1761583780655-f66645789e21?w=600&auto=format&fit=crop&q=60"],
+   "description"=>"Aggressive naked sport. Best for city thrill riders who want agility.","damage_charge"=>800,"extra_hour_charge"=>80,"terms"=>"Full gear required. No highway night riding.","owner_name"=>"Kiran R","badge"=>"New"],
+  ["id"=>3,"title"=>"Honda Activa 6G","type"=>"2wheeler","category"=>"Scooter","city"=>"At Shop","final_price"=>200,"price_per_day"=>200,"model"=>"Activa",
+   "imgs"=>["https://images.unsplash.com/photo-1744298350102-7db880bf551c?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1621417696521-5e9fb2e436a9?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=600&auto=format&fit=crop"],
+   "description"=>"Reliable everyday scooter, easy to ride and very fuel efficient.","damage_charge"=>300,"extra_hour_charge"=>30,"terms"=>"Helmet provided. Return with same fuel level.","owner_name"=>"Ankit Patel","badge"=>"Budget"],
+  ["id"=>4,"title"=>"KTM Duke 390","type"=>"2wheeler","category"=>"Sport","city"=>"LPU Main Gate","final_price"=>600,"price_per_day"=>600,"model"=>"Duke 390",
+   "imgs"=>["https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=600&q=80", "https://images.unsplash.com/photo-1589874876262-6af49c17b326?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1670012300918-6e0dda76af1a?w=600&auto=format&fit=crop&q=60"],
+   "description"=>"High-performance naked bike. Aggressive handling and strong brakes.","damage_charge"=>1200,"extra_hour_charge"=>100,"terms"=>"Valid license required. No pillion on highways.","owner_name"=>"Arjun Singh","badge"=>"Premium"],
+  ["id"=>5,"title"=>"Lamborghini Hurac�n","type"=>"4wheeler","category"=>"Sports Car","city"=>"LPU Main Gate","final_price"=>12000,"price_per_day"=>12000,"model"=>"Hurac�n",
+   "imgs"=>["https://images.unsplash.com/photo-1657217674164-9cbf85acfc6d?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1657769106786-b6f50ac90f5f?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1519245659620-e859806a8d3b?w=600&auto=format&fit=crop&q=60"],
+   "description"=>"Exotic sports car. Perfect for elite experiences.","damage_charge"=>20000,"extra_hour_charge"=>2000,"terms"=>"Driver not included.","owner_name"=>"Priya Sharma","badge"=>"HOT"],
+  ["id"=>6,"title"=>"Mahindra Thar","type"=>"4wheeler","category"=>"Off-Road","city"=>"LPU Main Gate","final_price"=>3000,"price_per_day"=>3000,"model"=>"Thar 4x4",
+   "imgs"=>["https://images.unsplash.com/photo-1710225358761-4f5891df657d?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1710225395366-b0bfc6514eb0?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1710225410609-4557fefb50fd?w=600&auto=format&fit=crop&q=60"],
+   "description"=>"Open-top 4x4 built for adventure. Beaches, trails, hills � it handles all.","damage_charge"=>3000,"extra_hour_charge"=>250,"terms"=>"4WD lock for off-road only. Return mud-free.","owner_name"=>"Deepak Admin","badge"=>"Adventure"],
+  ["id"=>7,"title"=>"Mercedes-Benz GLE","type"=>"4wheeler","category"=>"Luxury","city"=>"Law Gate","final_price"=>6500,"price_per_day"=>6500,"model"=>"GLE",
+   "imgs"=>["https://images.unsplash.com/photo-1654306369985-0fb9e1a2baf5?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1654306489816-fa96b11518f8?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1669234226129-8ede05b40eff?q=80&w=600&auto=format&fit=crop"],
+   "description"=>"Executive luxury SUV. Perfect for events, weddings, and business travel.","damage_charge"=>5000,"extra_hour_charge"=>400,"terms"=>"No smoking. Must return spotless.","owner_name"=>"Sanjay Mehta","badge"=>"Elite"],
+  ["id"=>8,"title"=>"Porsche 911 Turbo S","type"=>"4wheeler","category"=>"Sports Car","city"=>"LPU Main Gate","final_price"=>15000,"price_per_day"=>15000,"model"=>"911",
+   "imgs"=>["https://images.unsplash.com/photo-1698131789135-9328c3e5644a?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1698131788896-87ed9eb974c1?w=600&auto=format&fit=crop&q=60", "https://images.unsplash.com/photo-1698131789050-4a9ec6fb27cc?w=600&auto=format&fit=crop&q=60"],
+   "description"=>"Legendary performance. Very fast.","damage_charge"=>10000,"extra_hour_charge"=>1000,"terms"=>"Fuel not included.","owner_name"=>"Meena R","badge"=>"VIP"],
 ];
 
 
@@ -42,11 +70,27 @@ if (!empty($vehicles)) {
     $vehicles = $demos;
 }
 
+foreach ($vehicles as &$v) {
+  $v['is_booked_now'] = in_array((int)($v['id'] ?? 0), $bookedNowIds, true);
+}
+unset($v);
+
 if ($typeFilter !== 'all') {
     $vehicles = array_values(array_filter($vehicles, fn($v) => $v['type'] === $typeFilter));
 }
 if ($cityFilter) {
     $vehicles = array_values(array_filter($vehicles, fn($v) => stripos($v['city'], $cityFilter) !== false));
+}
+if ($budgetFilter > 0) {
+    if ($budgetFilter == 500) {
+        $vehicles = array_values(array_filter($vehicles, fn($v) => ($v['final_price'] ?? $v['price_per_day'] ?? 0) <= 500));
+    } elseif ($budgetFilter == 2000) {
+        $vehicles = array_values(array_filter($vehicles, fn($v) => ($v['final_price'] ?? $v['price_per_day'] ?? 0) > 500 && ($v['final_price'] ?? $v['price_per_day'] ?? 0) <= 2000));
+    } elseif ($budgetFilter == 5000) {
+        $vehicles = array_values(array_filter($vehicles, fn($v) => ($v['final_price'] ?? $v['price_per_day'] ?? 0) > 2000 && ($v['final_price'] ?? $v['price_per_day'] ?? 0) <= 5000));
+    } elseif ($budgetFilter == 5001) {
+        $vehicles = array_values(array_filter($vehicles, fn($v) => ($v['final_price'] ?? $v['price_per_day'] ?? 0) > 5000));
+    }
 }
 
 /* Sanitize image URLs — replace local paths with online fallbacks */
@@ -65,21 +109,36 @@ unset($v);
 <?php include 'header.php'; ?>
 
 <style>
+/* ══ SECTION ══ */
+.sec{padding:5.5rem 3rem;}
+.sec-alt{background:var(--bg2);}
+.si{max-width:1200px;margin:0 auto;}
+.stag{font-size:.6rem;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--bl);display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;}
+.stag::before{content:'';width:18px;height:1.5px;background:var(--bl);}
+.sh{font-size:clamp(1.9rem,3.5vw,2.8rem);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--wh);line-height:1;}
+.sh .dim{-webkit-text-stroke:1px rgba(26,140,255,.2);color:transparent;}
+.st{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:3.5rem;}
+
 /* ══ FILTER TABS ══ */
-.fstrip{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem; justify-content:center; padding-top:4rem;}
+.fstrip{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:2.4rem;}
 .ftab{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem 1.3rem;border-radius:30px;background:transparent;border:1px solid rgba(255,255,255,.07);color:var(--tx2);font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .3s;font-family:inherit;}
 .ftab:hover,.ftab.on{background:var(--bl);color:var(--bk);border-color:var(--bl);}
 .ftab i{font-size:.75rem;}
 
-.search-wrap{display:flex;justify-content:center;gap:10px;align-items:center;margin-bottom:3.5rem;flex-wrap:wrap;}
-.search-input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--wh);font-family:inherit;font-size:.82rem;padding:.6rem 1.2rem;outline:none;width:240px;border-radius:30px;transition:all .3s;}
-.search-input:focus{border-color:var(--bl);background:rgba(26,140,255,0.05);}
-.count-txt{font-size:.78rem;color:rgba(226,232,240,0.45);font-weight:600;}
-
 /* ══ VEHICLE CARDS (From Index) ══ */
-.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.4rem;max-width:1200px;margin:0 auto;padding:0 2rem 6rem;position:relative;z-index:10;}
-.vc{background:var(--cd);border:1px solid rgba(255,255,255,0.06);overflow:hidden;position:relative;transition:transform 0.4s cubic-bezier(.16,1,.3,1),border-color 0.3s;}
-.vc:hover{transform:translateY(-8px);border-color:rgba(59,130,246,0.3);}
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.4rem;}
+.vc{
+  background: #0A0D17;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.4s cubic-bezier(.16,1,.3,1), border-color 0.3s, box-shadow 0.4s;
+}
+.vc:hover {
+  transform: translateY(-8px);
+  border-color: rgba(59,130,246,0.3);
+ 
+}
 .vcb{position:absolute;top:.8rem;left:.8rem;z-index:3;padding:.18rem .65rem;font-size:.56rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;}
 .bh{background:rgba(255,56,96,.12);border:1px solid rgba(255,56,96,.28);color:#FF3860;}
 .bp{background:rgba(26,140,255,.12);border:1px solid rgba(26,140,255,.28);color:var(--bl);}
@@ -90,21 +149,71 @@ unset($v);
 .ba{background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.25);color:var(--yn);}
 .bs{background:rgba(255,56,96,.1);border:1px solid rgba(255,56,96,.25);color:#FF3860;}
 .vct{position:absolute;top:.8rem;right:.8rem;z-index:3;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:var(--bl);font-size:.75rem;}
+.vcb-booked{top:2.4rem;background:rgba(255,56,96,.12);border:1px solid rgba(255,56,96,.28);color:#FF3860;}
 
-.vcim{position:relative;height:270px;overflow:hidden;background:var(--bg3);display:flex;align-items:center;justify-content:center;}
+.vcim{
+  position:relative;
+  height:270px;
+  overflow:hidden;
+  background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;
+}
 .vcim-wrap{position:absolute;inset:0;}
-.vcim-slide{position:absolute;inset:0;opacity:0;transition:opacity .5s ease,transform .6s cubic-bezier(.16,1,.3,1);background:var(--bg3);}
+.vcim-slide{
+  position:absolute;inset:0;
+  opacity:0;
+  transition:opacity .5s ease, transform .6s cubic-bezier(.16,1,.3,1);
+  background:var(--bg3);
+}
 .vcim-slide.on{opacity:1;z-index:1;}
-.vcim img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.vcim img{
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center;
+  display:block;
+}
 .vc:hover .vcim .vcim-slide.on img{transform:scale(1.06);filter:brightness(1.08);}
 
-.vcar-arr{position:absolute;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,0.6);color:var(--wh);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;opacity:0;transition:all .3s;font-size:.7rem;}
-.vcar-arr-l{left:.6rem;} .vcar-arr-r{right:.6rem;}
+.vcar-arr {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--wh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  transition: all .3s;
+  font-size: .7rem;
+}
+.vcar-arr-l{left:.6rem;}
+.vcar-arr-r{right:.6rem;}
 .vc:hover .vcar-arr{opacity:1;}
 .vcar-arr:hover{background:var(--bl);color:var(--bk);border-color:var(--bl);}
 
-.vcar-dots{position:absolute;bottom:.8rem;left:50%;transform:translateX(-50%);display:flex;gap:.35rem;z-index:10;}
-.vcar-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s;}
+.vcar-dots {
+  position: absolute;
+  bottom: .8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: .35rem;
+  z-index: 10;
+}
+.vcar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  cursor: pointer;
+  transition: all .3s;
+}
 .vcar-dot.on{background:var(--bl);width:14px;border-radius:4px;}
 .vcar-count{position:absolute;top:.8rem;right:.6rem;z-index:10;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);padding:.25rem .5rem;border-radius:6px;font-size:.6rem;font-weight:700;color:var(--wh);border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.3rem;opacity:0;transition:opacity .3s;}
 .vc:hover .vcar-count{opacity:1;}
@@ -128,12 +237,11 @@ unset($v);
 .bdt:hover{border-color:var(--bl);color:var(--bl);}
 .brt{background:var(--bl);color:var(--bk);box-shadow:0 0 10px var(--blg);}
 .brt:hover{background:#3AB0FF;}
+.bsm-disabled{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--tx2);cursor:not-allowed;pointer-events:none;opacity:.6;}
+.btn-disabled{pointer-events:none;opacity:.6;filter:saturate(.7);}
 
-.s-header{text-align:center;padding:7rem 2rem 1rem;position:relative;z-index:10;}
-.s-header h1{font-size:2.5rem;font-weight:800;color:var(--wh);text-transform:uppercase;letter-spacing:.05em;}
-.s-header p{color:var(--tx2);font-size:.9rem;margin-top:.5rem;}
-
-.empty-state{text-align:center;padding:4rem 2rem;color:var(--tx2);max-width:1200px;margin:0 auto;position:relative;z-index:10;}
+/* Custom buttons: Book and List actions */
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--tx2);}
 .empty-state i{font-size:2.8rem;margin-bottom:1rem;opacity:0.3;display:block;color:var(--bl);}
 
 /* ══ MODAL ══ */
@@ -152,22 +260,22 @@ unset($v);
 .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease;}
 .rv.show{opacity:1;transform:none;}
 </style>
-
-<div class="s-header">
-  <h1>Browse the Fleet</h1>
-  <p>Find the perfect vehicle for your next journey.</p>
-</div>
-
-<div class="fstrip">
-  <button class="ftab <?php echo $typeFilter==='all'?'on':''; ?>" onclick="filterType('all',this)"><i class="fa-solid fa-flag-checkered"></i> All Types</button>
-  <button class="ftab <?php echo $typeFilter==='2wheeler'?'on':''; ?>" onclick="filterType('2wheeler',this)"><i class="fa-solid fa-motorcycle"></i> 2-Wheelers</button>
-  <button class="ftab <?php echo $typeFilter==='4wheeler'?'on':''; ?>" onclick="filterType('4wheeler',this)"><i class="fa-solid fa-car"></i> 4-Wheelers</button>
-</div>
-<div class="search-wrap">
-  <input type="text" class="search-input" id="citySearch" placeholder="Search city or name..." value="<?php echo htmlspecialchars($cityFilter); ?>">
-  <button class="btn btn-primary" onclick="doSearch()" style="border-radius:30px;padding:.6rem 1.4rem;"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-  <span class="count-txt" id="countLabel" style="margin-left:1rem;"><?php echo count($vehicles); ?> vehicles found</span>
-</div>
+<section class="sec sec-alt" id="fleet">
+  <div class="si">
+    <div class="st">
+      <div>
+        <div class="stag">Real Vehicles — Verified Owners</div>
+        <div class="sh">FEATURED <span class="dim">FLEET</span></div>
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:center">
+        <a href="vehicles.php" class="btn btns" style="border-radius:30px">View All <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+    </div>
+    <div class="fstrip">
+      <button class="ftab <?php echo $typeFilter==='all'?'on':''; ?>" onclick="fltr('all',this)"><i class="fa-solid fa-flag-checkered"></i> All</button>
+      <button class="ftab <?php echo $typeFilter==='2wheeler'?'on':''; ?>" onclick="fltr('2wheeler',this)"><i class="fa-solid fa-motorcycle"></i> Bikes &amp; Scooters</button>
+      <button class="ftab <?php echo $typeFilter==='4wheeler'?'on':''; ?>" onclick="fltr('4wheeler',this)"><i class="fa-solid fa-car"></i> Cars &amp; SUVs</button>
+    </div>
 
 <?php if (empty($vehicles)): ?>
 <div class="empty-state">
@@ -175,7 +283,7 @@ unset($v);
   <p>No vehicles found matching your criteria. Try adjusting the search.</p>
 </div>
 <?php else: ?>
-<div class="vg" id="vGrid">
+<div class="vg" id="vg">
   <?php
   $tagCls=['HOT'=>'bh','POPULAR'=>'bp','ELITE'=>'be','NEW'=>'bn','VIP'=>'bv','BUDGET'=>'bb','ADVENTURE'=>'ba','SPORTY'=>'bs',''=>'bp'];
   
@@ -189,9 +297,12 @@ unset($v);
         $rawImgs = [$v['image'] ?? ($is2w ? $fallback2w : $fallback4w)];
     }
   ?>
-  <div class="vc rv show" data-type="<?php echo $v['type']; ?>" style="transition-delay:<?php echo ($i%4)*.04; ?>s">
+  <div class="vc rv" data-type="<?php echo $v['type']; ?>" style="transition-delay:<?php echo ($i%4)*.08; ?>s">
     <?php if(!empty($v['badge'])): ?>
     <div class="vcb <?php echo $tc; ?>"><?php echo $v['badge']; ?></div>
+    <?php endif; ?>
+    <?php if(!empty($v['is_booked_now'])): ?>
+    <div class="vcb vcb-booked">Booked</div>
     <?php endif; ?>
     <div class="vct"><i class="fa-solid <?php echo $is2w ? 'fa-motorcycle' : 'fa-car'; ?>"></i></div>
 
@@ -255,11 +366,19 @@ unset($v);
               "id" => $v['id'] ?? 0,
               "desc" => $v['description'] ?? '',
               "terms" => $v['terms'] ?? '',
-              "damage" => $v['damage_charge'] ?? 0
+              "damage" => $v['damage_charge'] ?? 0,
+              "speed" => $v['speed'] ?? 'N/A',
+              "seats" => $v['seats'] ?? 'N/A',
+              "fuel" => $v['fuel'] ?? 'N/A',
+              "is_booked_now" => !empty($v['is_booked_now'])
           ];
           ?>
-          <button class="bsm bdt" onclick='opm(<?php echo json_encode($dtParams, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP); ?>)'>Details</button>
-          <a href="book_vehicle.php?id=<?php echo $v['id']; ?>" class="bsm brt">Rent</a>
+            <button class="bsm bdt" onclick='openModal(<?php echo htmlspecialchars(json_encode(array_merge($dtParams,["img" => $rawImgs[0] ?? ""]), JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP), ENT_QUOTES); ?>)'>Details</button>
+          <?php if(!empty($v['is_booked_now'])): ?>
+            <span class="bsm bsm-disabled" title="Unavailable right now">Unavailable</span>
+          <?php else: ?>
+            <a href="book_vehicle.php?id=<?php echo $v['id']; ?>&t=<?php echo urlencode($v['name'] ?? $v['title'] ?? 'Vehicle'); ?>&type=<?php echo urlencode($v['type'] ?? '2wheeler'); ?><?php echo !empty($rawImgs[0]) ? '&img='.rawurlencode((string)$rawImgs[0]) : ''; ?>" class="bsm brt" style="display:inline-flex;align-items:center;"><i class="fa-solid fa-calendar-days"></i> Book</a>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -267,31 +386,27 @@ unset($v);
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
+  </div>
+</section>
 
 <!-- MODAL -->
-<div class="mov" id="mo">
-  <div class="mo fade-in" id="moi">
-    <button class="mcl" onclick="clsh()"><i class="fa-solid fa-xmark"></i></button>
-    <div class="moim"><img src="" id="moimg" alt=""></div>
+<div class="mov" id="dm">
+  <div class="mo">
+    <button class="mcl" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="moim"><img id="mI" src="" alt="" style="display:block;"></div>
     <div class="mob">
-      <div class="vcc" id="mocat" style="margin-bottom:.4rem;"></div>
-      <div class="vcn" id="monam" style="font-size:1.6rem;margin-bottom:.8rem;"></div>
-      <div class="vclo" style="font-size:.75rem;"><i class="fa-solid fa-location-dot"></i> <span id="mocity"></span></div>
-      
+      <div style="font-size:.58rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--bl);margin-bottom:.3rem;" id="mCat"></div>
+      <div style="font-size:1.7rem;font-weight:700;color:var(--wh);margin-bottom:.5rem;" id="mNm"></div>
       <div class="msg">
-        <div class="msp"><div class="mspl">Daily Rate</div><div class="mspv" id="mopri"></div></div>
-        <div class="msp"><div class="mspl">Damage Deposit</div><div class="mspv" id="modmg"></div></div>
-        <div class="msp"><div class="mspl">Location</div><div class="mspv" id="moloc" style="font-size:.8rem;"></div></div>
+        <div class="msp"><div class="mspl">Daily Rate</div><div class="mspv" id="mPr"></div></div>
+        <div class="msp"><div class="mspl">Top Speed</div><div class="mspv" id="mSp"></div></div>
+        <div class="msp"><div class="mspl">Seats / Fuel</div><div class="mspv" id="mSe"></div></div>
       </div>
-      
-      <div style="font-size:.85rem;line-height:1.7;color:var(--tx2);margin-bottom:1.5rem;" id="modesc"></div>
-      
-      <div style="background:var(--bg3);border:1px solid rgba(255,255,255,.05);padding:1rem;margin-bottom:1.5rem;">
-        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--tx2);margin-bottom:.5rem;">Terms & Conditions</div>
-        <div id="moterms" style="font-size:.78rem;color:var(--tx2);line-height:1.6;"></div>
+      <p id="mDs" style="font-size:.83rem;color:var(--tx2);line-height:1.8;margin-bottom:1.5rem;"></p>
+      <div style="display:flex;gap:.7rem;">
+        <a id="mBk" href="vehicles.php" class="btn btnp" style="flex:1;justify-content:center;border-radius:30px">Book Now <i class="fa-solid fa-arrow-right"></i></a>
+        <button onclick="closeModal()" class="btn btns" style="border-radius:30px">Close</button>
       </div>
-      
-      <a href="#" id="mobtn" class="btn btnp" style="width:100%;justify-content:center;padding:1rem 0;">Book Vehicle <i class="fa-solid fa-arrow-right"></i></a>
     </div>
   </div>
 </div>
@@ -317,73 +432,62 @@ function jumpCar(dot, idx, e){
   if(c) c.textContent = (idx+1)+'/'+s.length;
 }
 
-function filterType(type, btn) {
+function fltr(type, btn) {
   document.querySelectorAll('.ftab').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  doFilter();
-}
-
-function doSearch() {
-  doFilter();
-}
-
-function doFilter() {
-  const query = document.getElementById('citySearch').value.toLowerCase();
-  let count=0;
-  let typeBtn = document.querySelector('.ftab.on');
-  let want2w = false, want4w = false;
-  if(typeBtn && !typeBtn.textContent.toLowerCase().includes('all')) {
-      want2w = typeBtn.textContent.toLowerCase().includes('2-wheeler');
-      want4w = typeBtn.textContent.toLowerCase().includes('4-wheeler');
-  }
-  
   document.querySelectorAll('.vc').forEach(c => {
-    let name = c.querySelector('.vc-name').textContent.toLowerCase();
-    let loc = c.querySelector('.vc-loc').textContent.toLowerCase();
-    let show = !query || name.includes(query) || loc.includes(query);
-    
-    let typeOk = true;
-    if(want2w && c.dataset.type !== '2wheeler') typeOk = false;
-    if(want4w && c.dataset.type !== '4wheeler') typeOk = false;
-    
-    if(show && typeOk){ c.style.display = ''; count++; } else { c.style.display = 'none'; }
+    c.style.display = (type === 'all' || c.dataset.type === type) ? '' : 'none';
   });
-  document.getElementById('countLabel').textContent = count + ' vehicles found';
-}
-document.getElementById('citySearch')?.addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
-
-function opm(v){
-  document.getElementById('moimg').src = v.imgs[0] || '';
-  document.getElementById('mocat').textContent = v.cat || '';
-  document.getElementById('monam').textContent = v.name || '';
-  document.getElementById('mopri').textContent = v.price || '';
-  document.getElementById('mocity').textContent = v.city || 'India';
-  document.getElementById('moloc').textContent = v.city || 'India';
-  let dmg = v.damage ? Number(v.damage) : 0;
-  document.getElementById('modmg').textContent = dmg>0 ? ('₹'+dmg.toLocaleString('en-IN')) : 'N/A';
-  document.getElementById('modesc').textContent = v.desc || 'No description provided.';
-  document.getElementById('moterms').textContent = v.terms || 'Standard rental terms apply.';
-  document.getElementById('mobtn').href = 'book_vehicle.php?id=' + (v.id || 1);
-  const mo = document.getElementById('mo');
-  const moi = document.getElementById('moi');
-  mo.classList.add('open');
-  setTimeout(()=> { moi.classList.add('show'); }, 10);
-  document.body.style.overflow = 'hidden';
 }
 
-function clsh(){
-  document.getElementById('moi').classList.remove('show');
-  setTimeout(()=> { 
-    document.getElementById('mo').classList.remove('open'); 
-    document.body.style.overflow='';
-  }, 400);
+function openModal(v) {
+  const card = document.querySelector(`.vcim[data-id="${v.id}"]`);
+  let activeImg = v.img || v.image;
+  if(card) {
+    const activeSlide = card.querySelector('.vcim-slide.on img');
+    if(activeSlide) activeImg = activeSlide.src;
+  }
+
+  document.getElementById('mI').src = activeImg || '';
+  document.getElementById('mCat').textContent = (v.cat || v.category || '') + (v.type === '2wheeler' ? ' · 2 Wheeler' : ' · 4 Wheeler');
+  document.getElementById('mNm').textContent  = v.name || v.title || 'Vehicle';
+  document.getElementById('mPr').textContent  = v.price || ('₹' + (v.final_price || v.price_per_day || 'N/A'));
+  document.getElementById('mSp').textContent  = v.speed || 'Contact Admin';
+  document.getElementById('mSe').textContent  = (v.seats || 'N/A') + ' / ' + (v.fuel || 'N/A');
+  document.getElementById('mDs').textContent  = v.desc || 'A premium well-maintained ' + (v.cat || v.category || 'vehicle') + ' available for rent.';
+
+  const bookBtn = document.getElementById('mBk');
+  if (v.is_booked_now) {
+    bookBtn.textContent = 'Unavailable';
+    bookBtn.href = 'javascript:void(0)';
+    bookBtn.classList.add('btn-disabled');
+  } else {
+    bookBtn.innerHTML = 'Book Now <i class="fa-solid fa-arrow-right"></i>';
+    const t = encodeURIComponent(v.name || v.title || 'Vehicle');
+    const ty = encodeURIComponent(v.type || '2wheeler');
+    let bookUrl = 'book_vehicle.php?id=' + (v.id || 1) + '&t=' + t + '&type=' + ty;
+    const thumb = (Array.isArray(v.imgs) && v.imgs[0]) ? v.imgs[0] : (v.img || '');
+    if (thumb) bookUrl += '&img=' + encodeURIComponent(thumb);
+    bookBtn.href = bookUrl;
+    bookBtn.classList.remove('btn-disabled');
+  }
+
+  document.getElementById('dm').classList.add('open');
 }
-document.getElementById('mo').addEventListener('click',function(e){if(e.target===this)clsh();});
-document.addEventListener('keydown', e => { if(e.key==='Escape') clsh(); });
+function closeModal() { document.getElementById('dm').classList.remove('open'); }
+document.getElementById('dm')?.addEventListener('click', e => { if (e.target.id === 'dm') closeModal(); });
+
+const obs = new IntersectionObserver(e => e.forEach(el => {
+  if (el.isIntersecting) { el.target.classList.add('show'); obs.unobserve(el.target); }
+}), { threshold: .08 });
+document.querySelectorAll('.rv').forEach((el, i) => { el.style.transitionDelay = (i % 5) * .08 + 's'; obs.observe(el); });
 
 document.querySelectorAll('.vcim-slide img').forEach(img => {
-  if (img.complete) img.classList.add('loaded');
+  if (img.cxaomplete) img.classList.add('loaded');
 });
 </script>
 </body>
 </html>
+
+
+

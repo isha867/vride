@@ -20,7 +20,7 @@ if ($pdo && $_SESSION['user_id'] != 99) {
 .dash-inner{padding:3rem 2.5rem 6rem;max-width:1100px;margin:0 auto;}
 .dash-hello{font-family:inherit;font-size:1.8rem;font-weight:700;color:var(--white);margin-bottom:2rem;}
 .dash-hello span{color:var(--blue);}
-.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:3rem;}
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:3rem;}
 .dash-card{
   background: #0A0D17;
   border: 1px solid rgba(255,255,255,0.06);
@@ -41,13 +41,11 @@ if ($pdo && $_SESSION['user_id'] != 99) {
     <div class="dash-hello">Welcome back, <span><?= htmlspecialchars($_SESSION['name']??'User') ?></span>!</div>
     <div class="dash-grid">
       <div class="dash-card"><div class="dash-card-n"><?= count($myBookings) ?></div><div class="dash-card-l">My Bookings</div></div>
-      <div class="dash-card"><div class="dash-card-n"><?= count($myListings) ?></div><div class="dash-card-l">My Listings</div></div>
       <div class="dash-card"><div class="dash-card-n"><?= count(array_filter($myBookings,fn($b)=>$b['status']==='approved')) ?></div><div class="dash-card-l">Approved</div></div>
     </div>
     <div class="quick-actions">
       <a href="vehicles.php" class="btn btn-primary"><i class="fas fa-car"></i> Browse & Book Vehicle</a>
-      <a href="list_vehicle.php" class="btn btn-secondary"><i class="fas fa-key"></i> List My Vehicle</a>
-    </div>
+      </div>
     <div class="sec-sep">My Bookings</div>
     <?php if (empty($myBookings)): ?>
     <div style="background:var(--card);border:1px solid rgba(255,255,255,.05);padding:2rem;text-align:center;color:var(--txt2);margin-bottom:2rem;">
@@ -69,29 +67,9 @@ if ($pdo && $_SESSION['user_id'] != 99) {
       </tbody>
     </table></div>
     <?php endif; ?>
-    <div class="sec-sep">My Vehicle Listings</div>
-    <?php if (empty($myListings)): ?>
-    <div style="background:var(--card);border:1px solid rgba(255,255,255,.05);padding:2rem;text-align:center;color:var(--txt2);">
-      No listings yet. <a href="list_vehicle.php" style="color:var(--blue);">List your vehicle →</a>
     </div>
-    <?php else: ?>
-    <div style="overflow-x:auto;"><table class="tbl">
-      <thead><tr><th>Vehicle</th><th>Type</th><th>City</th><th>Your Price</th><th>Final Price</th><th>Status</th></tr></thead>
-      <tbody>
-      <?php foreach($myListings as $v): ?>
-      <tr>
-        <td><?= htmlspecialchars($v['title']) ?></td>
-        <td><i class="fas <?= $v['type']==='2wheeler'?'fa-motorcycle':'fa-car' ?>"></i> <?= $v['type']==='2wheeler'?'2W':'4W' ?></td>
-        <td><i class="fas fa-map-pin"></i> <?= htmlspecialchars($v['city']??'') ?></td>
-        <td>₹<?= number_format($v['price_per_day']) ?></td>
-        <td>₹<?= number_format($v['final_price']??$v['price_per_day']) ?></td>
-        <td><span class="badge badge-<?= $v['status'] ?>"><?= strtoupper($v['status']) ?></span></td>
-      </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table></div>
-    <?php endif; ?>
-  </div>
 </div>
 </body>
 </html>
+
+

@@ -2,13 +2,40 @@
 // ============================================================
 // db.php — Database Configuration
 // All database connection settings live here
+// Supports both local (localhost) and Railway/Cloud deployments
 // ============================================================
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');       // Change to your MySQL username
-define('DB_PASS', '');           // Change to your MySQL password
-define('DB_NAME', 'vehicle_rental');
-define('DB_PORT', getenv('DB_PORT') ?: '3306');
+// Parse DATABASE_URL for Railway/Cloud environments
+$db_config = parse_database_url();
+
+define('DB_HOST', $db_config['host']);
+define('DB_USER', $db_config['user']);
+define('DB_PASS', $db_config['pass']);
+define('DB_NAME', $db_config['name']);
+define('DB_PORT', $db_config['port']);
+
+function parse_database_url() {
+    // Check for DATABASE_URL (Railway, Heroku, etc.)
+    if ($url = getenv('DATABASE_URL')) {
+        $parsed = parse_url($url);
+        return [
+            'host' => $parsed['host'] ?? 'localhost',
+            'user' => $parsed['user'] ?? 'root',
+            'pass' => $parsed['pass'] ?? '',
+            'name' => ltrim($parsed['path'] ?? '/vehicle_rental', '/'),
+            'port' => $parsed['port'] ?? 3306,
+        ];
+    }
+    
+    // Fallback to individual environment variables or hardcoded defaults (local)
+    return [
+        'host' => getenv('DB_HOST') ?: 'localhost',
+        'user' => getenv('DB_USER') ?: 'root',
+        'pass' => getenv('DB_PASS') ?: '',
+        'name' => getenv('DB_NAME') ?: 'vehicle_rental',
+        'port' => getenv('DB_PORT') ?: 3306,
+    ];
+}
 
 /** PDO options for MySQL — PHP 8.5+ deprecates PDO::MYSQL_ATTR_USE_BUFFERED_QUERY */
 function pdo_mysql_options(): array {

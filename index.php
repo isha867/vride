@@ -257,7 +257,7 @@ nav.sc{background:rgba(14, 20, 27, 1); border-bottom:1px solid rgba(255,255,255,
 .hero-name {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: .25rem;
+  gap: 1rem;
   flex: 0 0 auto;
   animation: heroNameGlow 3.8s ease-in-out infinite;
 }
@@ -310,7 +310,7 @@ nav.sc{background:rgba(14, 20, 27, 1); border-bottom:1px solid rgba(255,255,255,
 .hcar{
   position:absolute;
   /* move slideshow inward from the left so it doesn't cover that area */
-  left:38%;
+  left:50%;
   right:0;
   bottom:0;
   height:100%;
@@ -440,6 +440,14 @@ nav.sc{background:rgba(14, 20, 27, 1); border-bottom:1px solid rgba(255,255,255,
 .sec{padding:3.2rem 2.2rem;}
 .sec-alt{background:var(--bg2);}
 .si{max-width:1100px;margin:0 auto;}
+#fleet.sec{
+  padding-left:1rem;
+  padding-right:1rem;
+}
+#fleet .si{
+  max-width:min(1440px, calc(100vw - 2rem));
+  margin:0 auto;
+}
 .stag{font-size:.56rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--bl);display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem;}
 .stag::before{content:'';width:18px;height:1.5px;background:var(--bl);}
 .sh{font-size:clamp(1.6rem,3vw,2.3rem);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--wh);line-height:1;}
@@ -453,7 +461,7 @@ nav.sc{background:rgba(14, 20, 27, 1); border-bottom:1px solid rgba(255,255,255,
 .ftab i{font-size:.75rem;}
 
 /* ══ VEHICLE CARDS ══ */
-.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.1rem;}
+.vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1.1rem;}
 .vc{
   background: #0A0D17;
   border: 1px solid rgba(255,255,255,0.06);
@@ -675,6 +683,11 @@ select.fin option{background:var(--bg3);}
 
 @media(max-width:1000px){.hwg{grid-template-columns:1fr 1fr;}.teg{grid-template-columns:1fr 1fr;}.payg{grid-template-columns:1fr;}.ocg{grid-template-columns:1fr;}.fgi{grid-template-columns:1fr 1fr;}.hstats{display:none;}.paym{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:768px){nav{padding:.9rem 1.5rem;}.nav-links{display:none;}.hl{padding:0 1.5rem;padding-bottom:220px;max-width:100%;}.hcar{width:100%;}.hbot{padding:1rem 1.5rem;}.sec{padding:4rem 1.5rem;}.teg{grid-template-columns:1fr;}.hwg{grid-template-columns:1fr;}.fgi{grid-template-columns:1fr;}.msg{grid-template-columns:1fr 1fr;}.sbi{padding:1.2rem 1.5rem;}}
+@media(max-width:768px){
+  #fleet.sec{padding-left:.65rem;padding-right:.65rem;}
+  #fleet .si{max-width:100%;}
+  #fleet .vg{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));}
+}
 
 /* ================= Enhancements: Neon, Pop, Hero sync */
 .hero-vehicle{

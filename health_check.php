@@ -22,6 +22,10 @@ foreach ($tables as $table) {
     echo sprintf("Table %-8s: %s\n", $table, $exists ? 'OK' : 'MISSING');
 }
 
+$durationColStmt = $pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'bookings' AND column_name = 'duration_type'");
+$durationColExists = (int)$durationColStmt->fetchColumn() > 0;
+echo "Column bookings.duration_type: " . ($durationColExists ? 'OK' : 'MISSING') . "\n";
+
 $adminStmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role='admin'");
 $adminCount = (int)$adminStmt->fetchColumn();
 echo "Admin users: " . $adminCount . "\n";

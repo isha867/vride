@@ -52,6 +52,7 @@ function getDB() {
                 );
             } catch (PDOException $inner) {
                 // If DB is still not available, return null gracefully.
+                error_log('VRide DB connection failed: ' . $inner->getMessage());
                 return null;
             }
         }
@@ -199,6 +200,15 @@ function bootstrapDB() {
             FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL
         )");
 
+        // Ensure duration_type exists for hourly/day booking support on older schemas.
+        $hasDurationType = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'bookings' AND column_name = 'duration_type'")->fetchColumn();
+        if ($hasDurationType === 0) {
+            $pdo->exec("ALTER TABLE bookings ADD COLUMN duration_type VARCHAR(50) DEFAULT 'days' AFTER return_date");
+        }
+
+        // Keep `days` flexible for both day and hourly bookings.
+        $pdo->exec("ALTER TABLE bookings MODIFY COLUMN days DECIMAL(10,2)");
+
         // Ensure a default admin account exists.
         $adminExists = $pdo->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetchColumn();
         if (!$adminExists) {
@@ -287,5 +297,4 @@ function haversine($lat1,$lng1,$lat2,$lng2) {
     $a = sin($dLat/2)*sin($dLat/2)+cos(deg2rad($lat1))*cos(deg2rad($lat2))*sin($dLng/2)*sin($dLng/2);
     return $R * 2 * atan2(sqrt($a), sqrt(1-$a));
 }
-?>
 

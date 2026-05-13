@@ -1154,7 +1154,7 @@ select.fin option{background:var(--bg3);}
       </div>
     </div>
     <div class="f-btm">
-      <p class="fcp">&copy; 2026 VRide Anti. All rights reserved💕</p>
+      <p class="fcp">&copy; 2026 VRide Anti.Made by Isha Thakur💕</p>
       <div class="f-socials">
         <i class="fa-brands fa-instagram"></i>
         <i class="fa-brands fa-facebook-f"></i>
